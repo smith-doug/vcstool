@@ -213,6 +213,18 @@ class GitClient(VcsClientBase):
                 'returncode': 1,
             }
 
+    def _get_git_url(self, url):
+        """
+        Uses git ls-remote --get-url to resolve the final url, after .insteadOf
+        """
+        cmd = [GitClient._executable, 'ls-remote', '--get-url', url]
+        result = self._run_command(cmd)
+
+        if result['returncode']:
+            result['output'] = f'Command failed: ls-remote --get-url {url}: ' + \
+                               result['output']
+        return result
+
     def _get_remote_url(self, remote):
         cmd_url = [
             GitClient._executable, 'config', '--get', 'remote.%s.url' % remote]
@@ -233,12 +245,16 @@ class GitClient(VcsClientBase):
 
         self._check_executable()
         if GitClient.is_repository(self.path):
+            # Get the final url, after .insteadOf may have been applied
+            # Is there any way this could fail?
+            git_ls_remote = self._get_git_url(command.url)
+
             # verify that existing repository is the same
             result_urls = self._get_remote_urls()
-            if result_urls['returncode']:
+            if result_urls['returncode'] or git_ls_remote['returncode']:
                 return result_urls
             for url, remote in result_urls['output']:
-                if url == command.url:
+                if url == command.url or url == git_ls_remote['output']:
                     break
             else:
                 if command.skip_existing:

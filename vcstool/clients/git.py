@@ -257,27 +257,41 @@ class GitClient(VcsClientBase):
                 if url == command.url or url == git_ls_remote['output']:
                     break
             else:
-                if command.skip_existing:
-                    return {
-                        'cmd': '',
-                        'cwd': self.path,
-                        'output':
-                            'Skipped existing repository with different URL',
-                        'returncode': 0
-                    }
-                if not command.force:
-                    return {
-                        'cmd': '',
-                        'cwd': self.path,
-                        'output':
-                            'Path already exists and contains a different '
-                            'repository',
-                        'returncode': 1
-                    }
-                try:
-                    rmtree(self.path)
-                except OSError:
-                    os.remove(self.path)
+                # Should I attempt to add a remote?
+                if (command.add_remote_to_existing is not None
+                        and len(command.add_remote_to_existing) > 0):
+                    remote_add_msg = (f'No remote found for url {command.url}.  Adding one with the name '
+                                      f'{command.add_remote_to_existing}.')
+                    print(remote_add_msg)
+                    cmd_remote_add = [
+                        GitClient._executable, 'remote', 'add', command.add_remote_to_existing,
+                        command.url]
+                    result_remote_add = self._run_command(cmd_remote_add)
+                    if result_remote_add['returncode']:
+                        return result_remote_add
+                else:
+
+                    if command.skip_existing:
+                        return {
+                            'cmd': '',
+                            'cwd': self.path,
+                            'output':
+                                'Skipped existing repository with different URL',
+                            'returncode': 0
+                        }
+                    if not command.force:
+                        return {
+                            'cmd': '',
+                            'cwd': self.path,
+                            'output':
+                                'Path already exists and contains a different '
+                                'repository',
+                            'returncode': 1
+                        }
+                    try:
+                        rmtree(self.path)
+                    except OSError:
+                        os.remove(self.path)
 
         elif command.skip_existing and os.path.exists(self.path):
             return {

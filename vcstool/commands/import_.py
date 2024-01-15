@@ -32,6 +32,7 @@ class ImportCommand(Command):
         self.force = args.force
         self.retry = args.retry
         self.skip_existing = args.skip_existing
+        self.add_remote_to_existing = args.add_remote_to_existing
         self.recursive = recursive
         self.shallow = shallow
 
@@ -60,6 +61,9 @@ def get_parser():
         '--skip-existing', action='store_true', default=False,
         help="Don't overwrite existing directories or change custom checkouts "
              'in repos using the same URL (but fetch repos with same URL)')
+    group.add_argument(
+        '--add-remote-to-existing', type=str, default=None,
+        help="Add a remote with this name to existing repos if needed")
 
     return parser
 

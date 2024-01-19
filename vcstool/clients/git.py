@@ -2,7 +2,7 @@ import os
 from shutil import which
 import subprocess
 
-from vcstool.executor import USE_COLOR
+from vcstool.executor import USE_COLOR, ansi
 
 from .vcs_base import VcsClientBase
 from ..util import rmtree
@@ -227,10 +227,10 @@ class GitClient(VcsClientBase):
 
     def _get_remote_url(self, remote):
         cmd_url = [
-            GitClient._executable, 'config', '--get', 'remote.%s.url' % remote]
+                GitClient._executable, 'ls-remote', '--get-url', '%s' % remote]
         result_url = self._run_command(cmd_url)
         if result_url['returncode']:
-            result_url['output'] = 'Could not determine remote url: ' + \
+            result_url['output'] = f'Could not determine remote url for {remote}: ' + \
                 result_url['output']
         return result_url
 
@@ -254,7 +254,10 @@ class GitClient(VcsClientBase):
             if result_urls['returncode'] or git_resolved_url['returncode']:
                 return result_urls
             for url, remote in result_urls['output']:
-                if url == command.url or url == git_resolved_url['output']:
+                if url == command.url:
+                    break
+                if self._resolve_git_url(url)['output'] == git_resolved_url['output']:
+                    print(ansi('yellowf') + f"url {command.url} was resolved to {url} by insteadOf rules")
                     break
             else:
                 if command.skip_existing:

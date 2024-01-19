@@ -213,7 +213,7 @@ class GitClient(VcsClientBase):
                 'returncode': 1,
             }
 
-    def _get_git_url(self, url):
+    def _resolve_git_url(self, url):
         """
         Uses git ls-remote --get-url to resolve the final url, after .insteadOf
         """
@@ -247,14 +247,14 @@ class GitClient(VcsClientBase):
         if GitClient.is_repository(self.path):
             # Get the final url, after .insteadOf may have been applied
             # Is there any way this could fail?
-            git_ls_remote = self._get_git_url(command.url)
+            git_resolved_url = self._resolve_git_url(command.url)
 
             # verify that existing repository is the same
             result_urls = self._get_remote_urls()
-            if result_urls['returncode'] or git_ls_remote['returncode']:
+            if result_urls['returncode'] or git_resolved_url['returncode']:
                 return result_urls
             for url, remote in result_urls['output']:
-                if url == command.url or url == git_ls_remote['output']:
+                if url == command.url or url == git_resolved_url['output']:
                     break
             else:
                 if command.skip_existing:
